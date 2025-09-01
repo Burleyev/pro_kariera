@@ -1,0 +1,66 @@
+{
+  "@@locale": "de",
+  "appTitle": "ProKariera",
+  "menuAbout": "Über mich",
+  "menuServices": "Leistungen",
+  "menuAvgs": "AVGS",
+  "menuHowItWorks": "Etappen",
+  "menuTestimonials": "Testimonials",
+  "menuContact": "Kontakt",
+  
+  "heroTitle": "Karrierecoaching mit Herz",
+  "heroSubtitle": "Ich helfe Ukrainer:innen dabei, ihre beruflichen Träume zu verwirklichen\nKostenlose Beratung mit AVGS",
+  "heroButton": "Zur kostenlosen Beratung anmelden",
+  
+  "introTitle": "Hallo! Ich bin Karrierecoach",
+  "introText": "Ich bin Valeria – zertifizierte Karrierecoachin.",
+  "introText2": "Ich unterstütze Ukrainer:innen in Deutschland bei Bewerbung, Lebenslauf, Interviewvorbereitung und Karriereentwicklung.",
+  
+
+  "advantagesTitle": "Ihre Vorteile mit mir:",
+  "advantage": "• Individueller Ansatz\n• Verständnis des deutschen Arbeitsmarktes\n• Unterstützung bei AVGS-Finanzierung\n• Professionelle Unterlagen\n• Psychologische Unterstützung\n• Praktische Werkzeuge",
+  
+  "servicesTitle": "Meine Leistungen",
+  "service1Title": "Karriereweg-Analyse",
+  "service1Desc": "Wir definieren Ihr berufliches Ziel und die Schritte dorthin",
+  "service2Title": "Lebenslauf-Erstellung",
+  "service2Desc": "Ich helfe Ihnen, einen effektiven Lebenslauf für den deutschen Arbeitsmarkt zu erstellen.",
+  "service3Title": "Interview-Vorbereitung",
+  "service3Desc": "Wir üben, sicher auf Arbeitgeberfragen zu antworten",
+  "service4Title": "Jobsuche-Training",
+  "service4Desc": "Ich zeige effektive Methoden zur Stellensuche in Deutschland",
+  "service5Title": "AVGS-Support",
+  "service5Desc": "Ich erkläre, wie man einen Gutschein erhält und kostenlosen Coaching startet",
+  "service6Title": "Individuelle Beratung",
+  "service6Desc": "Persönliche Sitzungen zur Lösung konkreter Karrierefragen",
+  
+  "avgsTitle": "AVGS – Kostenlose Karriereberatung",
+  "avgsText": "AVGS (Aktivierungs- und Vermittlungsgutschein) ist ein staatlicher Gutschein für kostenlose Karriereberatung.",
+  "avgsHelp": "Ich helfe dir:"
+  "avgsHelp1": "Gutschein beim Jobcenter / Agentur für Arbeit erhalten",
+  "avgsHelp2": "Verstehen, wie die Finanzierung funktioniert",
+  "avgsHelp3": "Individuelle Sitzungen mit mir starten – kostenlos",
+  "avgsButton": "Nicht zögern – prüfen Sie Ihren AVGS-Anspruch!",
+  
+  "howItWorksTitle": "So läuft unsere Zusammenarbeit ab",
+  "step1Title": "Anfrage",
+  "step1Desc": "Sie senden eine Anfrage – Ich kontaktiere Sie und bespreche das Format.",
+  "step2Title": "Beratung",
+  "step2Desc": "Wir bestimmen Ihre Ziele und Bedürfnisse und wählen die Richtung.",
+  "step3Title": "Arbeit",
+  "step3Desc": "Wir arbeiten an Lebenslauf, Interviewvorbereitung und Karriereentwicklung.",
+  "step4Title": "Ergebnis",
+  "step4Desc": "Sie bewegen sich sicher auf Ihr Ziel zu mit einem klaren Aktionsplan.",
+  
+  "testimonialsTitle": "Testimonials",
+  
+  "contactTitle": "Nachricht hinterlassen",
+  "contactNameLabel": "Ihr Name",
+  "contactEmailLabel": "Ihre E-Mail",
+  "contactMessageLabel": "Nachricht",
+  "contactSendButton": "Senden",
+  
+  "contactInfoTitle": "Kontaktinformation",
+  "contactEmail": "hello@prokariera.de",
+  "contactPhone": "+49 123 456 789"
+}
