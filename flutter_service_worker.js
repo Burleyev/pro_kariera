@@ -3,7 +3,7 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"flutter_bootstrap.js": "d141a7d69b260a57c30ffe61e4dd8f74",
+const RESOURCES = {"flutter_bootstrap.js": "38d3897f331bdc99f78db7cd0977edb5",
 "version.json": "79d0a34012c0226dceb91628762ce27a",
 "macos/Runner.xcworkspace/contents.xcworkspacedata": "7053ea3423578187357b9f92d0c67fc6",
 "macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist": "117105d2f2ee718eb485a07574a219b6",
@@ -36,7 +36,7 @@ const RESOURCES = {"flutter_bootstrap.js": "d141a7d69b260a57c30ffe61e4dd8f74",
 "index.html": "5418499205ad01d67a49cd88642af6a0",
 "/": "5418499205ad01d67a49cd88642af6a0",
 "devtools_options.yaml": "d1ff5187b1b67653e7357395895e8449",
-"main.dart.js": "7c03c2dd7a8a22ec56c613651850eaf2",
+"main.dart.js": "c5d473ec148f56b248c65d94a341c105",
 "web/index.html": "db18c687a2d8f1918acfd7338ae3f79c",
 "web/favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "web/icons/proKarieraLogo.jpeg": "627799097cad51538105a56dc036f9b3",
