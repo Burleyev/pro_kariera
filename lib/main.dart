@@ -1,14 +1,23 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:pro_kariera/admin/app/widgets_admin/messages_admin.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/const/theme.dart';
+import 'package:pro_kariera/firebase_options.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:ui' as ui;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:pro_kariera/widgets/screens/main_scafold.dart';
+import 'package:pro_kariera/admin/admin_entry.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() => runApp(const AppRoot());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const AppRoot());
+}
 
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
@@ -22,12 +31,37 @@ class AppRoot extends StatefulWidget {
 
 class _AppRootState extends State<AppRoot> {
   Locale? _locale;
+  Future<void> _testRead() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('content')
+        .doc('ua')
+        .get();
+    print('content/ua exists=${snap.exists} data=${snap.data()}');
+  }
 
   @override
   void initState() {
     super.initState();
 
     _initializeLocale();
+    _firestoreHealthCheck();
+    _testRead();
+  }
+
+  Future<void> _firestoreHealthCheck() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('health')
+          .doc('check')
+          .get();
+      if (doc.exists) {
+        print('✅ Firestore доступен: ${doc.data()}');
+      } else {
+        print('⚠️ Firestore доступен, но документа нет.');
+      }
+    } catch (e) {
+      print('❌ Ошибка Firestore: $e');
+    }
   }
 
   void _initializeLocale() {
@@ -42,7 +76,7 @@ class _AppRootState extends State<AppRoot> {
         _locale = Locale(sys);
       }
     } catch (e) {
-      _locale = const Locale('de'); // дефолт на DE
+      _locale = const Locale('uk');
     }
   }
 
@@ -65,6 +99,10 @@ class _AppRootState extends State<AppRoot> {
         GlobalCupertinoLocalizations.delegate,
       ],
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/admin': (_) => const AdminEntry(),
+        '/admin/messages': (_) => const MessagesAdminPage(),
+      },
       builder: (context, child) {
         return Stack(
           children: [

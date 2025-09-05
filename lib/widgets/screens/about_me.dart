@@ -5,6 +5,7 @@ import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
 import 'package:pro_kariera/widgets/photo_collage.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class AboutMe extends StatelessWidget {
   const AboutMe({super.key});
@@ -13,12 +14,39 @@ class AboutMe extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 1200) {
-          return _AboutMeDesktop(t: t);
+    final appLang = Localizations.localeOf(context).languageCode; // 'uk' | 'de'
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
+
+    final fallbacks = <String, String>{
+      'introTitle': t.introTitle,
+      'introText': t.introText,
+      'introText2': t.introText2,
+      'advantagesTitle': t.advantagesTitle,
+      'advantage': t.advantage,
+    };
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchAboutMe(localeKey),
+      builder: (context, snap) {
+        final data = (snap.data ?? const <String, dynamic>{});
+        String getS(String k) => (data[k] as String?) ?? fallbacks[k] ?? '';
+
+        if (MediaQuery.of(context).size.width >= 1200) {
+          return _AboutMeDesktop(
+            introTitle: getS('introTitle'),
+            introText: getS('introText'),
+            introText2: getS('introText2'),
+            advantagesTitle: getS('advantagesTitle'),
+            advantage: getS('advantage'),
+          );
         } else {
-          return _AboutMeMobile(t);
+          return _AboutMeMobile(
+            introTitle: getS('introTitle'),
+            introText: getS('introText'),
+            introText2: getS('introText2'),
+            advantagesTitle: getS('advantagesTitle'),
+            advantage: getS('advantage'),
+          );
         }
       },
     );
@@ -26,9 +54,19 @@ class AboutMe extends StatelessWidget {
 }
 
 class _AboutMeDesktop extends StatelessWidget {
-  const _AboutMeDesktop({required this.t});
+  const _AboutMeDesktop({
+    required this.introTitle,
+    required this.introText,
+    required this.introText2,
+    required this.advantagesTitle,
+    required this.advantage,
+  });
 
-  final AppLocalizations t;
+  final String introTitle;
+  final String introText;
+  final String introText2;
+  final String advantagesTitle;
+  final String advantage;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +86,7 @@ class _AboutMeDesktop extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      t.introTitle,
+                      introTitle,
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -61,7 +99,7 @@ class _AboutMeDesktop extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      t.introText,
+                      introText,
                       textAlign: TextAlign.center,
                       softWrap: true,
                       maxLines: 10,
@@ -74,7 +112,7 @@ class _AboutMeDesktop extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      t.introText2,
+                      introText2,
                       textAlign: TextAlign.center,
                       softWrap: true,
                       maxLines: 100,
@@ -104,7 +142,13 @@ class _AboutMeDesktop extends StatelessWidget {
                     ),
                   ),
                   Positioned(right: 0, child: PhotoCollage()),
-                  Positioned(right: 350.w, child: FlyInContainer()),
+                  Positioned(
+                    right: 350.w,
+                    child: FlyInContainer(
+                      advantagesTitle: advantagesTitle,
+                      advantage: advantage,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -116,7 +160,14 @@ class _AboutMeDesktop extends StatelessWidget {
 }
 
 class FlyInContainer extends StatefulWidget {
-  const FlyInContainer({super.key});
+  const FlyInContainer({
+    super.key,
+    required this.advantagesTitle,
+    required this.advantage,
+  });
+
+  final String advantagesTitle;
+  final String advantage;
 
   @override
   State<FlyInContainer> createState() => _FlyInContainerState();
@@ -158,7 +209,6 @@ class _FlyInContainerState extends State<FlyInContainer>
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 1200;
 
@@ -173,7 +223,7 @@ class _FlyInContainerState extends State<FlyInContainer>
         position: _offsetAnimation,
         child: Container(
           padding: const EdgeInsets.all(16),
-          width: isMobile ? double.infinity : 321.w,
+          width: isMobile ? double.infinity : 351.w,
           constraints: BoxConstraints(
             maxWidth: isMobile ? double.infinity : 421.w,
           ),
@@ -188,7 +238,7 @@ class _FlyInContainerState extends State<FlyInContainer>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                t.advantagesTitle,
+                widget.advantagesTitle,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -203,7 +253,7 @@ class _FlyInContainerState extends State<FlyInContainer>
               const Divider(color: Colors.grey),
               const SizedBox(height: 8),
               Text(
-                t.advantage,
+                widget.advantage,
                 textAlign: TextAlign.start,
                 softWrap: true,
                 maxLines: 8,
@@ -224,8 +274,19 @@ class _FlyInContainerState extends State<FlyInContainer>
 }
 
 class _AboutMeMobile extends StatelessWidget {
-  const _AboutMeMobile(this.t);
-  final AppLocalizations t;
+  const _AboutMeMobile({
+    required this.introTitle,
+    required this.introText,
+    required this.introText2,
+    required this.advantagesTitle,
+    required this.advantage,
+  });
+
+  final String introTitle;
+  final String introText;
+  final String introText2;
+  final String advantagesTitle;
+  final String advantage;
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +305,7 @@ class _AboutMeMobile extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  t.introTitle,
+                  introTitle,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -258,7 +319,7 @@ class _AboutMeMobile extends StatelessWidget {
 
                 // Первый текст
                 Text(
-                  t.introText,
+                  introText,
                   textAlign: TextAlign.center,
                   softWrap: true,
                   style: GoogleFonts.poppins(
@@ -270,7 +331,7 @@ class _AboutMeMobile extends StatelessWidget {
 
                 // Второй текст
                 Text(
-                  t.introText2,
+                  introText2,
                   textAlign: TextAlign.center,
                   softWrap: true,
                   style: GoogleFonts.poppins(
@@ -284,7 +345,10 @@ class _AboutMeMobile extends StatelessWidget {
             ),
           ),
 
-          FlyInContainer(), // 🔹 анимация блока
+          FlyInContainer(
+            advantagesTitle: advantagesTitle,
+            advantage: advantage,
+          ), // 🔹 анимация блока
         ],
       ),
     );

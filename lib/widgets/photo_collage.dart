@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:pro_kariera/widgets/net_photo.dart';
 import 'package:pro_kariera/widgets/photo.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class PhotoCollage extends StatefulWidget {
   const PhotoCollage({super.key});
@@ -73,47 +75,70 @@ class _PhotoCollageState extends State<PhotoCollage>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final maxW = c.maxWidth.isFinite ? c.maxWidth : 800.0;
-        final height = math.max(280.0, math.min(520.0, maxW * 0.6));
-        final width = maxW;
+    final appLang = Localizations.localeOf(context).languageCode;
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: FirestoreContentService.instance.watchAboutMe(localeKey),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        final photo1Url = (data['photo1Url'] ?? '') as String;
+        final photo2Url = (data['photo2Url'] ?? '') as String;
+        final photo3Url = (data['photo3Url'] ?? '') as String;
+        return LayoutBuilder(
+          builder: (context, c) {
+            final maxW = c.maxWidth.isFinite ? c.maxWidth : 800.0;
+            final height = math.max(280.0, math.min(520.0, maxW * 0.6));
+            final width = maxW;
 
-        return SizedBox(
-          width: width,
-          height: height,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // фото #3
-              Positioned(
-                right: 0,
-                top: 0,
-                child: FadeTransition(
-                  opacity: _animation1,
-                  child: Photo(asset: 'assets/photo3.jpeg', h: 500.h),
-                ),
+            return SizedBox(
+              width: width,
+              height: height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // фото #3
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: FadeTransition(
+                      opacity: _animation1,
+                      child: NetPhoto(
+                        url: photo1Url,
+                        fallback: 'assets/photo3.jpeg',
+                        h: 500.h,
+                      ),
+                    ),
+                  ),
+                  // фото #2
+                  Positioned(
+                    right: 270,
+                    top: height * 0.05,
+                    child: FadeTransition(
+                      opacity: _animation2,
+                      child: NetPhoto(
+                        url: photo2Url,
+                        fallback: 'assets/photo2.jpeg',
+                        h: 200.h,
+                      ),
+                    ),
+                  ),
+                  // фото #7
+                  Positioned(
+                    right: 220,
+                    top: height * 0.58,
+                    child: FadeTransition(
+                      opacity: _animation3,
+                      child: NetPhoto(
+                        url: photo3Url,
+                        fallback: 'assets/photo7.jpeg',
+                        h: 300.h,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              // фото #2
-              Positioned(
-                right: 270,
-                top: height * 0.05,
-                child: FadeTransition(
-                  opacity: _animation2,
-                  child: Photo(asset: 'assets/photo2.jpeg', h: 200.h),
-                ),
-              ),
-              // фото #7
-              Positioned(
-                right: 220,
-                top: height * 0.58,
-                child: FadeTransition(
-                  opacity: _animation3,
-                  child: Photo(asset: 'assets/photo7.jpeg', h: 300.h),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

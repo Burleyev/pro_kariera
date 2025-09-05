@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class HowIWork extends StatelessWidget {
   const HowIWork({super.key});
@@ -79,96 +80,115 @@ class _DesktopHowIWorkState extends State<DesktopHowIWork>
     final t = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return VisibilityDetector(
-      key: const Key('desktop-how-i-work'),
-      onVisibilityChanged: (info) {
-        if (!_hasAnimated && info.visibleFraction > 0.3) {
-          _hasAnimated = true;
-          _startAnimations();
-        }
-      },
-      child: SizedBox(
-        width: screenWidth,
-        height: 800.h,
-        child: Stack(
-          children: [
-            Positioned(
-              top: 50.h,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  t.howItWorksTitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 26.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+    final appLang = Localizations.localeOf(context).languageCode;
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchHowItWorks(localeKey),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        final title = data['howItWorksTitle'] ?? t.howItWorksTitle;
+        final step1Title = data['step1Title'] ?? t.step1Title;
+        final step1Desc = data['step1Desc'] ?? t.step1Desc;
+        final step2Title = data['step2Title'] ?? t.step2Title;
+        final step2Desc = data['step2Desc'] ?? t.step2Desc;
+        final step3Title = data['step3Title'] ?? t.step3Title;
+        final step3Desc = data['step3Desc'] ?? t.step3Desc;
+        final step4Title = data['step4Title'] ?? t.step4Title;
+        final step4Desc = data['step4Desc'] ?? t.step4Desc;
+
+        return VisibilityDetector(
+          key: const Key('desktop-how-i-work'),
+          onVisibilityChanged: (info) {
+            if (!_hasAnimated && info.visibleFraction > 0.3) {
+              _hasAnimated = true;
+              _startAnimations();
+            }
+          },
+          child: SizedBox(
+            width: screenWidth,
+            height: 800.h,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 50.h,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 26.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                AnimatedBuilder(
+                  animation: _lineController,
+                  builder: (context, child) {
+                    return Stack(
+                      children: [
+                        Positioned(
+                          bottom: 390.h,
+                          left: 0,
+                          child: Container(
+                            width: screenWidth * _leftWidth.value,
+                            height: 20.h,
+                            color: AppColors.secondaryLight,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 390.h,
+                          right: 0,
+                          child: Container(
+                            width: screenWidth * _rightWidth.value,
+                            height: 20.h,
+                            color: AppColors.secondaryLight,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                _buildBlock(
+                  0,
+                  left: 80.w,
+                  bottom: 475.h,
+                  number: '1',
+                  title: step1Title,
+                  description: step1Desc,
+                ),
+                _buildBlock(
+                  1,
+                  left: 480.w,
+                  bottom: 125.h,
+                  number: '2',
+                  title: step2Title,
+                  description: step2Desc,
+                ),
+                _buildBlock(
+                  2,
+                  left: 880.w,
+                  bottom: 475.h,
+                  number: '3',
+                  title: step3Title,
+                  description: step3Desc,
+                ),
+                _buildBlock(
+                  3,
+                  left: 1280.w,
+                  bottom: 125.h,
+                  number: '4',
+                  title: step4Title,
+                  description: step4Desc,
+                ),
+              ],
             ),
-            AnimatedBuilder(
-              animation: _lineController,
-              builder: (context, child) {
-                return Stack(
-                  children: [
-                    Positioned(
-                      bottom: 390.h,
-                      left: 0,
-                      child: Container(
-                        width: screenWidth * _leftWidth.value,
-                        height: 20.h,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 390.h,
-                      right: 0,
-                      child: Container(
-                        width: screenWidth * _rightWidth.value,
-                        height: 20.h,
-                        color: AppColors.secondaryLight,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            _buildBlock(
-              0,
-              left: 80.w,
-              bottom: 475.h,
-              number: '1',
-              title: t.step1Title,
-              description: t.step1Desc,
-            ),
-            _buildBlock(
-              1,
-              left: 480.w,
-              bottom: 125.h,
-              number: '2',
-              title: t.step2Title,
-              description: t.step2Desc,
-            ),
-            _buildBlock(
-              2,
-              left: 880.w,
-              bottom: 475.h,
-              number: '3',
-              title: t.step3Title,
-              description: t.step3Desc,
-            ),
-            _buildBlock(
-              3,
-              left: 1280.w,
-              bottom: 125.h,
-              number: '4',
-              title: t.step4Title,
-              description: t.step4Desc,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -311,91 +331,110 @@ class _MobileHowIWorkState extends State<MobileHowIWork>
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
-    final steps = [
-      {'number': '1', 'title': t.step1Title, 'desc': t.step1Desc},
-      {'number': '2', 'title': t.step2Title, 'desc': t.step2Desc},
-      {'number': '3', 'title': t.step3Title, 'desc': t.step3Desc},
-      {'number': '4', 'title': t.step4Title, 'desc': t.step4Desc},
-    ];
+    final appLang = Localizations.localeOf(context).languageCode;
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
 
-    return VisibilityDetector(
-      key: const Key('mobile-how-i-work'),
-      onVisibilityChanged: (info) {
-        if (!_hasAnimated && info.visibleFraction > 0.2) {
-          _hasAnimated = true;
-          _startAnimations();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              t.howItWorksTitle,
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            for (int i = 0; i < steps.length; i++)
-              FadeTransition(
-                opacity: _fadeAnimations[i],
-                child: ScaleTransition(
-                  scale: _scaleAnimations[i],
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.secondaryLight),
-                        color: Colors.grey.shade200,
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Text(
-                            steps[i]['number']!,
-                            style: GoogleFonts.rubik(
-                              fontSize: 40,
-                              color: AppColors.secondaryLight,
-                              fontWeight: FontWeight.bold,
-                            ),
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchHowItWorks(localeKey),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        final title = data['howItWorksTitle'] ?? t.howItWorksTitle;
+        final step1Title = data['step1Title'] ?? t.step1Title;
+        final step1Desc = data['step1Desc'] ?? t.step1Desc;
+        final step2Title = data['step2Title'] ?? t.step2Title;
+        final step2Desc = data['step2Desc'] ?? t.step2Desc;
+        final step3Title = data['step3Title'] ?? t.step3Title;
+        final step3Desc = data['step3Desc'] ?? t.step3Desc;
+        final step4Title = data['step4Title'] ?? t.step4Title;
+        final step4Desc = data['step4Desc'] ?? t.step4Desc;
+
+        final steps = [
+          {'number': '1', 'title': step1Title, 'desc': step1Desc},
+          {'number': '2', 'title': step2Title, 'desc': step2Desc},
+          {'number': '3', 'title': step3Title, 'desc': step3Desc},
+          {'number': '4', 'title': step4Title, 'desc': step4Desc},
+        ];
+
+        return VisibilityDetector(
+          key: const Key('mobile-how-i-work'),
+          onVisibilityChanged: (info) {
+            if (!_hasAnimated && info.visibleFraction > 0.3) {
+              _hasAnimated = true;
+              _startAnimations();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                for (int i = 0; i < steps.length; i++)
+                  FadeTransition(
+                    opacity: _fadeAnimations[i],
+                    child: ScaleTransition(
+                      scale: _scaleAnimations[i],
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.secondaryLight),
+                            color: Colors.grey.shade200,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  steps[i]['title']!,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textSecondary,
-                                  ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Text(
+                                steps[i]['number']!,
+                                style: GoogleFonts.rubik(
+                                  fontSize: 40,
+                                  color: AppColors.secondaryLight,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  steps[i]['desc']!,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      steps[i]['title']!,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      steps[i]['desc']!,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

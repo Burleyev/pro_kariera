@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class PriceSection extends StatelessWidget {
   const PriceSection({super.key, required this.onBookPressed});
@@ -16,91 +17,123 @@ class PriceSection extends StatelessWidget {
     final w = MediaQuery.of(context).size.width;
     final isMobile = w < 1200;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1760),
-          child: Column(
-            crossAxisAlignment: isMobile
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.stretch,
-            children: [
-              // Заголовок секции
-              Text(
-                t.priceTitle, // "Preis" / "Вартість"
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: isMobile ? 20 : 26.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
+    final appLang = Localizations.localeOf(context).languageCode;
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
 
-              // Акцентная карточка
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  border: Border.all(width: 2, color: AppColors.secondaryLight),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 20 : 32,
-                  vertical: isMobile ? 20 : 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Верх: текст и кнопка (в ряд на desktop, в колонку на mobile)
-                    isMobile
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              _PriceTextBlock(t: t, isMobile: isMobile),
-                              const SizedBox(height: 20),
-                              _PriceButton(
-                                isMobile: isMobile,
-                                onPressed: onBookPressed,
-                                text: t.heroButton,
-                              ),
-                            ],
-                          )
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // слева — текст
-                              Expanded(
-                                child: _PriceTextBlock(
-                                  t: t,
-                                  isMobile: isMobile,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
+    final fallbacks = {
+      'priceTitle': t.priceTitle,
+      'priceCard': t.priceCard,
+      'azavNote': t.azavNote,
+      'heroButton': t.heroButton,
+    };
 
-                              // справа — кнопка
-                              _PriceButton(
-                                isMobile: isMobile,
-                                onPressed: onBookPressed,
-                                text: t.heroButton,
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchPrice(localeKey),
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? {};
+        String getText(String key) =>
+            (data[key] as String?) ?? fallbacks[key] ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1760),
+              child: Column(
+                crossAxisAlignment: isMobile
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.stretch,
+                children: [
+                  // Заголовок секции
+                  Text(
+                    getText('priceTitle'), // "Preis" / "Вартість"
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? 20 : 26.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Акцентная карточка
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      border: Border.all(
+                        width: 2,
+                        color: AppColors.secondaryLight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 20 : 32,
+                      vertical: isMobile ? 20 : 24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Верх: текст и кнопка (в ряд на desktop, в колонку на mobile)
+                        isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _PriceTextBlock(
+                                    title: getText('priceCard'),
+                                    note: getText('azavNote'),
+                                    isMobile: isMobile,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _PriceButton(
+                                    isMobile: isMobile,
+                                    onPressed: onBookPressed,
+                                    text: getText('heroButton'),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // слева — текст
+                                  Expanded(
+                                    child: _PriceTextBlock(
+                                      title: getText('priceCard'),
+                                      note: getText('azavNote'),
+                                      isMobile: isMobile,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+
+                                  // справа — кнопка
+                                  _PriceButton(
+                                    isMobile: isMobile,
+                                    onPressed: onBookPressed,
+                                    text: getText('heroButton'),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
 class _PriceTextBlock extends StatelessWidget {
-  const _PriceTextBlock({required this.t, required this.isMobile});
+  const _PriceTextBlock({
+    required this.title,
+    required this.note,
+    required this.isMobile,
+  });
 
-  final AppLocalizations t;
+  final String title;
+  final String note;
   final bool isMobile;
 
   @override
@@ -111,7 +144,7 @@ class _PriceTextBlock extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         Text(
-          t.priceCard, // "Privates Coaching — 100 € (bis zu 90 Min.)"
+          title, // "Privates Coaching — 100 € (bis zu 90 Min.)"
           textAlign: isMobile ? TextAlign.center : TextAlign.left,
           style: TextStyle(
             fontSize: isMobile ? 16 : 18.sp,
@@ -121,7 +154,7 @@ class _PriceTextBlock extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          t.azavNote, // "AZAV-Zertifizierung im Prozess"
+          note, // "AZAV-Zertifizierung im Prozess"
           style: TextStyle(
             fontSize: isMobile ? 13 : 14.sp,
             color: AppColors.textSecondary,

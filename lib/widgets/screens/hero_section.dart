@@ -3,7 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
-import 'package:pro_kariera/widgets/photo.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
+import 'package:pro_kariera/widgets/net_photo.dart';
 
 class HeroSection extends StatelessWidget {
   const HeroSection({super.key, required this.onBookPressed});
@@ -12,35 +13,70 @@ class HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final appLang = Localizations.localeOf(context).languageCode; // 'uk' | 'de'
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        if (screenWidth >= 1200) {
-          return _HeroDesktop(
-            t: t,
-            screenWidth: screenWidth,
-            onBookPressed: onBookPressed, // <-- передаём
-          );
-        } else {
-          return _HeroMobile(
-            onBookPressed: onBookPressed, // <-- передаём
-          );
-        }
+    // Фоллбэки на i18n
+    final fallbacks = {
+      'heroTitle': t.heroTitle,
+      'heroSubtitle': t.heroSubtitle,
+      'heroButton': t.heroButton,
+    };
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchHero(localeKey),
+      builder: (context, snap) {
+        final data = (snap.data ?? const <String, dynamic>{});
+        final title = (data['heroTitle'] as String?) ?? fallbacks['heroTitle']!;
+        final subtitle =
+            (data['heroSubtitle'] as String?) ?? fallbacks['heroSubtitle']!;
+        final buttonText =
+            (data['heroButton'] as String?) ?? fallbacks['heroButton']!;
+        final heroImageUrl = (data['heroImageUrl'] as String?)?.trim() ?? '';
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            if (screenWidth >= 1200) {
+              return _HeroDesktop(
+                title: title,
+                subtitle: subtitle,
+                buttonText: buttonText,
+                imageUrl: heroImageUrl,
+                screenWidth: screenWidth,
+                onBookPressed: onBookPressed,
+              );
+            } else {
+              return _HeroMobile(
+                title: title,
+                subtitle: subtitle,
+                buttonText: buttonText,
+                imageUrl: heroImageUrl,
+                onBookPressed: onBookPressed,
+              );
+            }
+          },
+        );
       },
     );
   }
 }
 
 class _HeroDesktop extends StatelessWidget {
-  final AppLocalizations t;
+  final String title;
+  final String subtitle;
+  final String buttonText;
+  final String imageUrl;
   final double screenWidth;
-  final VoidCallback onBookPressed; // <-- объявили поле
+  final VoidCallback onBookPressed;
 
   const _HeroDesktop({
-    required this.t,
+    required this.title,
+    required this.subtitle,
+    required this.buttonText,
+    required this.imageUrl,
     required this.screenWidth,
-    required this.onBookPressed, // <-- потребовали в конструкторе
+    required this.onBookPressed,
   });
 
   @override
@@ -69,7 +105,12 @@ class _HeroDesktop extends StatelessWidget {
                   top: 30.h,
                   child: SizedBox(
                     height: 500.h,
-                    child: Photo(asset: "assets/fotoHeroDes.jpeg", h: 500.h),
+
+                    child: NetPhoto(
+                      url: imageUrl,
+                      fallback: "assets/fotoHeroDes.jpeg",
+                      h: 500,
+                    ),
                   ),
                 ),
               ],
@@ -82,7 +123,7 @@ class _HeroDesktop extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  t.heroTitle,
+                  title,
                   style: GoogleFonts.rubik(
                     fontSize: 48.sp,
                     fontWeight: FontWeight.w600,
@@ -93,7 +134,7 @@ class _HeroDesktop extends StatelessWidget {
                 ),
                 SizedBox(height: 24.h),
                 Text(
-                  t.heroSubtitle,
+                  subtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -103,9 +144,9 @@ class _HeroDesktop extends StatelessWidget {
                 ),
                 SizedBox(height: 24.h),
                 ElevatedButton(
-                  onPressed: onBookPressed, // <-- работает
+                  onPressed: onBookPressed,
                   child: Text(
-                    t.heroButton,
+                    buttonText,
                     style: GoogleFonts.poppins(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w500,
@@ -124,23 +165,31 @@ class _HeroDesktop extends StatelessWidget {
 }
 
 class _HeroMobile extends StatelessWidget {
-  const _HeroMobile({required this.onBookPressed});
+  const _HeroMobile({
+    required this.title,
+    required this.subtitle,
+    required this.buttonText,
+    required this.imageUrl,
+    required this.onBookPressed,
+  });
+  final String title;
+  final String subtitle;
+  final String buttonText;
+  final String imageUrl;
   final VoidCallback onBookPressed;
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Photo(asset: "assets/fotoHeroDes.jpeg", h: 300),
-          const SizedBox(height: 24),
+          NetPhoto(url: imageUrl, fallback: "assets/fotoHeroDes.jpeg", h: 300),
+
           Text(
-            t.heroTitle,
+            title,
             textAlign: TextAlign.center,
             style: GoogleFonts.rubik(
               fontSize: 24,
@@ -150,7 +199,7 @@ class _HeroMobile extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            t.heroSubtitle,
+            subtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -160,9 +209,9 @@ class _HeroMobile extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: onBookPressed, // <-- вызывем колбэк
+            onPressed: onBookPressed,
             child: Text(
-              t.heroButton,
+              buttonText,
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

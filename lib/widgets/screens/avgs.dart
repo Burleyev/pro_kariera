@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
 import 'package:pro_kariera/widgets/photo.dart';
+import 'package:pro_kariera/widgets/net_photo.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class Avgs extends StatefulWidget {
   const Avgs({super.key});
@@ -27,9 +29,75 @@ class _AvgsState extends State<Avgs> {
     final lang = Localizations.localeOf(context).languageCode;
     final isDe = lang == 'de';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 1200;
+    final appLang = Localizations.localeOf(context).languageCode; // 'uk' | 'de'
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
+
+    // Локальные фоллбэки на случай пустых данных из Firestore
+    const titlesUkFallback = [
+      '❓ Що таке AVGS?',
+      '❓ Хто має право на AVGS?',
+      '❓ Що покриває AVGS?',
+      '❓ Як отримати AVGS?',
+      '❓ Чи можна самостійно обрати коуча?',
+    ];
+    const titlesDeFallback = [
+      '❓ Was ist AVGS?',
+      '❓ Wer hat Anspruch auf AVGS?',
+      '❓ Was deckt AVGS ab?',
+      '❓ Wie beantragt man AVGS?',
+      '❓ Kann man den Coach selbst wählen?',
+    ];
+    const answersUkFallback = [
+      'AVGS (Aktivierungs- und Vermittlungsgutschein) — це ваучер від Jobcenter або Agentur für Arbeit, який дозволяє безкоштовно пройти коучинг, курс або отримати підтримку в пошуку роботи.',
+      'AVGS можуть отримати безробітні, особи у відпустці по догляду за дитиною, новоприбулі, біженці та інші, хто шукає роботу.',
+      'AVGS покриває коучинг, допомогу з резюме, підготовку до співбесід, підтримку з відкриттям бізнесу або визнанням дипломів.',
+      'Потрібно звернутися до Jobcenter або Agentur für Arbeit, пояснити свою ціль та запитати про можливість отримання ваучера.',
+      'Так, головне — щоб обраний коуч або організація мали сертифікат AZAV.',
+    ];
+    const answersDeFallback = [
+      'AVGS (Aktivierungs- und Vermittlungsgutschein) ist ein Gutschein vom Jobcenter oder der Agentur für Arbeit, mit dem man kostenlos ein Coaching, einen Kurs oder Unterstützung bei der Jobsuche erhalten kann.',
+      'Anspruch haben u. a. Arbeitslose, Personen in Elternzeit, Neuankömmlinge, Geflüchtete und andere Arbeitssuchende.',
+      'AVGS deckt Coaching, Hilfe bei Bewerbungsunterlagen, Interviewvorbereitung, Gründungsberatung sowie Unterstützung bei der Anerkennung von Abschlüssen ab.',
+      'Wenden Sie sich an das Jobcenter oder die Agentur für Arbeit, erklären Sie Ihr Ziel und fragen Sie nach einem AVGS.',
+      'Ja, solange der gewählte Coach/Anbieter AZAV-zertifiziert ist.',
+    ];
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchAvgs(localeKey),
+      builder: (context, snap) {
+        final avgs = snap.data ?? const <String, dynamic>{};
+
+        // Тексты статуса
+        final statusTitle =
+            (avgs['avgsStatusTitle'] as String?) ?? t.avgsStatusTitle;
+        final statusText =
+            (avgs['avgsStatusText'] as String?) ?? t.avgsStatusText;
+
+        final imageUrl = (avgs['imageUrl'] as String?)?.trim() ?? '';
+
+        // Массивы FAQ: пробуем язык интерфейса, если нет — берём украинскую версию, если и её нет — фоллбэк-константы
+        List<String> _asStringList(dynamic v) => (v is List)
+            ? v.map((e) => e?.toString() ?? '').toList()
+            : const <String>[];
+
+        List<String> titles = [];
+        List<String> answers = [];
+
+        if (appLang == 'de') {
+          titles = _asStringList(avgs['titlesDe']);
+          answers = _asStringList(avgs['answersDe']);
+          if (titles.isEmpty) titles = _asStringList(avgs['titlesUk']);
+          if (answers.isEmpty) answers = _asStringList(avgs['answersUk']);
+          if (titles.isEmpty) titles = titlesDeFallback;
+          if (answers.isEmpty) answers = answersDeFallback;
+        } else {
+          titles = _asStringList(avgs['titlesUk']);
+          answers = _asStringList(avgs['answersUk']);
+          if (titles.isEmpty) titles = titlesUkFallback;
+          if (answers.isEmpty) answers = answersUkFallback;
+        }
+
+        final isMobile = MediaQuery.of(context).size.width < 1200;
 
         final textCol = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isMobile ? 800 : 560),
@@ -39,7 +107,7 @@ class _AvgsState extends State<Avgs> {
                 : CrossAxisAlignment.start,
             children: [
               Text(
-                t.avgsStatusTitle,
+                statusTitle,
                 textAlign: isMobile ? TextAlign.center : TextAlign.start,
                 style: GoogleFonts.rubik(
                   fontSize: isMobile ? 22 : 24,
@@ -59,7 +127,7 @@ class _AvgsState extends State<Avgs> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  t.avgsStatusText,
+                  statusText,
                   textAlign: isMobile ? TextAlign.center : TextAlign.start,
                   style: GoogleFonts.poppins(
                     fontSize: isMobile ? 13.5 : 14,
@@ -70,39 +138,12 @@ class _AvgsState extends State<Avgs> {
                 ),
               ),
               const SizedBox(height: 12),
-              // FAQ-спойлеры
-              ...List.generate(5, (index) {
-                final titlesUk = const [
-                  '❓ Що таке AVGS?',
-                  '❓ Хто має право на AVGS?',
-                  '❓ Що покриває AVGS?',
-                  '❓ Як отримати AVGS?',
-                  '❓ Чи можна самостійно обрати коуча?',
-                ];
-                final titlesDe = const [
-                  '❓ Was ist AVGS?',
-                  '❓ Wer hat Anspruch auf AVGS?',
-                  '❓ Was deckt AVGS ab?',
-                  '❓ Wie beantragt man AVGS?',
-                  '❓ Kann man den Coach selbst wählen?',
-                ];
-                final answersUk = const [
-                  'AVGS (Aktivierungs- und Vermittlungsgutschein) — це ваучер від Jobcenter або Agentur für Arbeit, який дозволяє безкоштовно пройти коучинг, курс або отримати підтримку в пошуку роботи.',
-                  'AVGS можуть отримати безробітні, особи у відпустці по догляду за дитиною, новоприбулі, біженці та інші, хто шукає роботу.',
-                  'AVGS покриває коучинг, допомогу з резюме, підготовку до співбесід, підтримку з відкриттям бізнесу або визнанням дипломів.',
-                  'Потрібно звернутися до Jobcenter або Agentur für Arbeit, пояснити свою ціль та запитати про можливість отримання ваучера.',
-                  'Так, головне — щоб обраний коуч або організація мали сертифікат AZAV.',
-                ];
-                final answersDe = const [
-                  'AVGS (Aktivierungs- und Vermittlungsgutschein) ist ein Gutschein vom Jobcenter oder der Agentur für Arbeit, mit dem man kostenlos ein Coaching, einen Kurs oder Unterstützung bei der Jobsuche erhalten kann.',
-                  'Anspruch haben u. a. Arbeitslose, Personen in Elternzeit, Neuankömmlinge, Geflüchtete und andere Arbeitssuchende.',
-                  'AVGS deckt Coaching, Hilfe bei Bewerbungsunterlagen, Interviewvorbereitung, Gründungsberatung sowie Unterstützung bei der Anerkennung von Abschlüssen ab.',
-                  'Wenden Sie sich an das Jobcenter oder die Agentur für Arbeit, erklären Sie Ihr Ziel und fragen Sie nach einem AVGS.',
-                  'Ja, solange der gewählte Coach/Anbieter AZAV-zertifiziert ist.',
-                ];
-                final titles = isDe ? titlesDe : titlesUk;
-                final answers = isDe ? answersDe : answersUk;
-                return Padding(
+              // FAQ-спойлеры из Firestore
+              ...List.generate(
+                (titles.length < answers.length)
+                    ? titles.length
+                    : answers.length,
+                (index) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _FaqSpoiler(
                     index: index,
@@ -111,8 +152,8 @@ class _AvgsState extends State<Avgs> {
                     title: titles[index],
                     answer: answers[index],
                   ),
-                );
-              }),
+                ),
+              ),
             ],
           ),
         );
@@ -125,7 +166,11 @@ class _AvgsState extends State<Avgs> {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Photo(asset: 'assets/photo4.jpeg', w: 273, h: 400),
+                    NetPhoto(
+                      url: imageUrl,
+                      fallback: 'assets/photo4.jpeg',
+                      h: 400,
+                    ),
                     const SizedBox(height: 16),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
@@ -136,7 +181,11 @@ class _AvgsState extends State<Avgs> {
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Photo(asset: 'assets/photo4.jpeg', w: 420, h: 780),
+                    NetPhoto(
+                      url: imageUrl,
+                      fallback: 'assets/photo4.jpeg',
+                      h: 780,
+                    ),
                     const SizedBox(width: 24),
                     Expanded(child: textCol),
                   ],

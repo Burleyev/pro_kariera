@@ -1,8 +1,11 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class Testimonials extends StatelessWidget {
   const Testimonials({super.key});
@@ -24,41 +27,116 @@ class ReviewWall extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final isMobile = MediaQuery.of(context).size.width < 1200;
+    final appLang = Localizations.localeOf(context).languageCode;
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
 
-    return Center(
-      child: Column(
-        children: [
-          Text(
-            t.testimonialsTitle,
-            style: GoogleFonts.poppins(
-              fontSize: isMobile ? 20.sp : 26.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: isMobile ? 24.h : 50.h),
-          isMobile
-              ? Column(
-                  children: getReviews(context)
-                      .map(
-                        (review) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: ReviewMobileCard(review: review),
-                        ),
-                      )
-                      .toList(),
-                )
-              : Wrap(
-                  spacing: 16.w,
-                  runSpacing: 16.w,
-                  children: getReviews(
-                    context,
-                  ).map((review) => ReviewTile(review: review)).toList(),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: FirestoreContentService.instance.watchTestimonials(localeKey),
+      builder: (context, snap) {
+        final reviews = snap.data ?? [];
+        if (reviews.isEmpty) return const SizedBox.shrink();
+
+        final reviewObjs = reviews
+            .where((r) {
+              final lang = (r['lang'] as String?)?.toLowerCase() ?? '';
+              return lang.isEmpty || lang == localeKey.toLowerCase();
+            })
+            .map(
+              (r) => Review(
+                name: r['name'] ?? '',
+                avatar:
+                    ((r['avatarUrl'] as String?)?.trim().isNotEmpty ?? false)
+                    ? (r['avatarUrl'] as String)
+                    : (((r['avatar'] as String?)?.trim().isNotEmpty ?? false)
+                          ? (r['avatar'] as String)
+                          : 'assets/avatar/fallback.png'),
+                stars: int.tryParse(r['stars']?.toString() ?? '5') ?? 5,
+                comment: r['comment'] ?? '',
+              ),
+            )
+            .take(4)
+            .toList();
+
+        return Center(
+          child: Column(
+            children: [
+              Text(
+                t.testimonialsTitle,
+                style: GoogleFonts.poppins(
+                  fontSize: isMobile ? 20 : 26,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-        ],
+              ),
+              SizedBox(height: isMobile ? 24.h : 50.h),
+              isMobile
+                  ? Column(
+                      children: reviewObjs
+                          .map(
+                            (review) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: ReviewMobileCard(review: review),
+                            ),
+                          )
+                          .toList(),
+                    )
+                  : Wrap(
+                      spacing: 16.w,
+                      runSpacing: 16.w,
+                      children: reviewObjs
+                          .map((review) => ReviewTile(review: review))
+                          .toList(),
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+ImageProvider<Object> _imageProviderFrom(String path) {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return NetworkImage(path);
+  }
+  return AssetImage(path);
+}
+
+Widget _avatarWidget(String path, double radius) {
+  final size = radius * 2;
+  final isNet = path.startsWith('http://') || path.startsWith('https://');
+  // Debug (optional):
+  try {
+    log('avatar path: ' + path);
+  } catch (_) {}
+
+  if (isNet) {
+    return ClipOval(
+      child: Image.network(
+        path,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        // graceful fallback on error
+        errorBuilder: (_, __, ___) => ClipOval(
+          child: Image.asset(
+            'assets/avatar/fallback.png',
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
       ),
     );
   }
+  return ClipOval(
+    child: Image.asset(
+      (path.isNotEmpty ? path : 'assets/avatar/fallback.png'),
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+    ),
+  );
 }
 
 class ReviewMobileCard extends StatelessWidget {
@@ -76,11 +154,7 @@ class ReviewMobileCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            backgroundColor: AppColors.secondaryLight,
-            backgroundImage: AssetImage(review.avatar),
-            radius: 40.r,
-          ),
+          _avatarWidget(review.avatar, 40.r),
           SizedBox(height: 8.h),
           Text(
             review.name,
@@ -155,11 +229,7 @@ class _ReviewTileState extends State<ReviewTile> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: AppColors.secondaryLight,
-                    backgroundImage: AssetImage(widget.review.avatar),
-                    radius: 40,
-                  ),
+                  _avatarWidget(widget.review.avatar, 40),
                   const SizedBox(height: 8),
                   Text(
                     widget.review.name,
@@ -207,11 +277,7 @@ class _ReviewTileState extends State<ReviewTile> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
-              backgroundColor: AppColors.secondaryLight,
-              radius: 40,
-              backgroundImage: AssetImage(widget.review.avatar),
-            ),
+            _avatarWidget(widget.review.avatar, 40),
             const SizedBox(height: 8),
             Text(widget.review.name, style: const TextStyle(fontSize: 16)),
             Row(
@@ -241,84 +307,4 @@ class Review {
     required this.stars,
     required this.comment,
   });
-}
-
-List<Review> getReviews(BuildContext context) {
-  final lang = Localizations.localeOf(context).languageCode;
-  if (lang == 'de') {
-    return [
-      Review(
-        name: 'Andrii S.',
-        avatar: 'assets/avatar/image3.png',
-        stars: 5,
-        comment:
-            'Ich habe mit Jobcoaching zusammengearbeitet und bin sehr zufrieden. '
-            'Die Unterstützung war professionell, freundlich und immer hilfreich. '
-            'Durch das Coaching habe ich eine tolle Arbeitsstelle gefunden. '
-            'Vielen Dank – absolut empfehlenswert!',
-      ),
-      Review(
-        name: 'Olena P.',
-        avatar: 'assets/avatar/foto1.png',
-        stars: 5,
-        comment:
-            'Es war sehr angenehm, mit Valeriia als Coach zu arbeiten. '
-            'Wir haben gemeinsam viel erreicht, ohne ihre Hilfe hätte ich es nicht geschafft. '
-            'Ich empfehle sie für ihren Fleiß und ihren kreativen Ansatz!',
-      ),
-      Review(
-        name: 'Iryna K.',
-        avatar: 'assets/avatar/image1.png',
-        stars: 5,
-        comment:
-            'Professionelle Unterstützung bei der Erstellung von Lebenslauf und Interviewvorbereitung, '
-            'plus moralische Unterstützung. Sie hat mir mit den Unterlagen für die Anerkennung geholfen. Vielen Dank!',
-      ),
-      Review(
-        name: 'Maria T.',
-        avatar: 'assets/avatar/image2.png',
-        stars: 5,
-        comment:
-            'Arbeit wird an Erfolgen gemessen. Dank des Coachings haben mein Mann und ich Arbeit gefunden. '
-            'Danke für die Motivation und den Glauben! Sehr zu empfehlen.',
-      ),
-    ];
-  } else {
-    return [
-      Review(
-        name: 'Андрій С.',
-        avatar: 'assets/avatar/image3.png',
-        stars: 5,
-        comment:
-            'Я працював із кар\'єрним коучингом і залишився дуже задоволений. '
-            'Підтримка була професійною, дружньою та завжди корисною. '
-            'Завдяки коучингу я знайшов чудову роботу. Дуже дякую – однозначно рекомендую!',
-      ),
-      Review(
-        name: 'Олена П.',
-        avatar: 'assets/avatar/foto1.png',
-        stars: 5,
-        comment:
-            'Дуже приємно було працювати з Валерією як з коучем. '
-            'Разом виконали багато роботи, без її допомоги я б не впоралась. '
-            'Рекомендую за старанність і креативний підхід!',
-      ),
-      Review(
-        name: 'Ірина К.',
-        avatar: 'assets/avatar/image1.png',
-        stars: 5,
-        comment:
-            'Професійний супровід у підготовці резюме та до співбесіди, плюс моральна підтримка. '
-            'Допомогли з пакетом документів для визнання диплому. Щиро дякую!',
-      ),
-      Review(
-        name: 'Марія Т.',
-        avatar: 'assets/avatar/image2.png',
-        stars: 5,
-        comment:
-            'Робота вимірюється досягненнями. Завдяки коучингу ми з чоловіком знайшли роботу. '
-            'Дякую за мотивацію і віру! Рекомендую від щирого серця.',
-      ),
-    ];
-  }
 }

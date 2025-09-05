@@ -5,6 +5,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import 'package:pro_kariera/const/app_colors.dart';
 import 'package:pro_kariera/l10n/app_localizations.dart';
+import 'package:pro_kariera/firebase/firestore_content_service.dart';
 
 class Services extends StatelessWidget {
   const Services({super.key});
@@ -15,57 +16,96 @@ class Services extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 1200;
 
-    final title = t.servicesTitle;
-    // Собираем статический список услуг из ARB (uk/de)
-    final items = <_ServiceData>[];
-    void addIfNotEmpty(String ttl, String dsc, IconData icon) {
-      if (ttl.trim().isEmpty && dsc.trim().isEmpty) return;
-      items.add(_ServiceData(title: ttl, text: dsc, icon: icon));
-    }
+    // Определяем локаль документа Firestore
+    final appLang = Localizations.localeOf(context).languageCode; // 'uk' | 'de'
+    final localeKey = appLang == 'uk' ? 'ua' : appLang;
 
-    addIfNotEmpty(t.service1Title, t.service1Desc, Icons.construction);
-    addIfNotEmpty(t.service2Title, t.service2Desc, Icons.handyman);
-    addIfNotEmpty(t.service3Title, t.service3Desc, Icons.plumbing);
-    addIfNotEmpty(t.service4Title, t.service4Desc, Icons.school_outlined);
-    addIfNotEmpty(t.service5Title, t.service5Desc, Icons.trending_up);
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: FirestoreContentService.instance.watchMap(localeKey, 'services'),
+      builder: (context, snap) {
+        final data = (snap.data ?? const <String, dynamic>{});
 
-    return Container(
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: isMobile ? 20 : 26.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
+        // Заголовок секции: берём из Firestore или из локализаций
+        final title = (data['servicesTitle'] as String?) ?? t.servicesTitle;
+
+        // Собираем список услуг. Пытаемся брать пары service{N}Title/service{N}Desc
+        final items = <_ServiceData>[];
+        void addIfNotEmpty(String ttl, String dsc, IconData icon) {
+          if (ttl.trim().isEmpty && dsc.trim().isEmpty) return;
+          items.add(_ServiceData(title: ttl, text: dsc, icon: icon));
+        }
+
+        // Иконки по порядку (можешь потом заменить на свои)
+        final icons = <IconData>[
+          Icons.construction,
+          Icons.handyman,
+          Icons.plumbing,
+          Icons.school_outlined,
+          Icons.trending_up,
+          Icons.check_circle_outline,
+          Icons.build_circle_outlined,
+          Icons.verified_user_outlined,
+        ];
+
+        // Пробуем заполнить до 8 карточек. Если в Firestore нет — используем ARB как запасной вариант (1..5)
+        for (int i = 1; i <= 8; i++) {
+          final ttlKey = 'service${i}Title';
+          final dscKey = 'service${i}Desc';
+          String ttl = (data[ttlKey] as String?) ?? '';
+          String dsc = (data[dscKey] as String?) ?? '';
+
+          if (ttl.isEmpty && dsc.isEmpty && i <= 5) {
+            // фоллбэки из локализаций
+            switch (i) {
+              case 1:
+                ttl = t.service1Title;
+                dsc = t.service1Desc;
+                break;
+              case 2:
+                ttl = t.service2Title;
+                dsc = t.service2Desc;
+                break;
+              case 3:
+                ttl = t.service3Title;
+                dsc = t.service3Desc;
+                break;
+              case 4:
+                ttl = t.service4Title;
+                dsc = t.service4Desc;
+                break;
+              case 5:
+                ttl = t.service5Title;
+                dsc = t.service5Desc;
+                break;
+            }
+          }
+
+          if (ttl.isNotEmpty || dsc.isNotEmpty) {
+            addIfNotEmpty(ttl, dsc, icons[(i - 1) % icons.length]);
+          }
+        }
+
+        return Container(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: isMobile ? 20 : 26.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ServicesCarousel(isMobile: isMobile, data: items),
+            ],
           ),
-          const SizedBox(height: 16),
-          ServicesCarousel(isMobile: isMobile, data: items),
-        ],
-      ),
+        );
+      },
     );
-  }
-
-  IconData _getIconByIndex(int index) {
-    switch (index) {
-      case 1:
-        return Icons.description_outlined;
-      case 2:
-        return Icons.record_voice_over;
-      case 3:
-        return Icons.assignment_turned_in;
-      case 4:
-        return Icons.school_outlined;
-      case 5:
-        return Icons.trending_up;
-
-      default:
-        return Icons.work_outline;
-    }
   }
 }
 
