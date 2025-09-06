@@ -3,7 +3,7 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"flutter_bootstrap.js": "67ec62cfcf07cb54ecf3fc7d00bd27d8",
+const RESOURCES = {"flutter_bootstrap.js": "1b69c47168c950a820650447a5d0639d",
 "version.json": "79d0a34012c0226dceb91628762ce27a",
 "macos/Runner.xcworkspace/contents.xcworkspacedata": "7053ea3423578187357b9f92d0c67fc6",
 "macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist": "117105d2f2ee718eb485a07574a219b6",
@@ -46,6 +46,7 @@ const RESOURCES = {"flutter_bootstrap.js": "67ec62cfcf07cb54ecf3fc7d00bd27d8",
 "web/icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "web/manifest.json": "61ad1ac27b33bcc912da8de44ce861f3",
 "pubspec.lock": "92907310f9e46a3dc77bc5717f3ea5ee",
+"404.html": "5418499205ad01d67a49cd88642af6a0",
 "flutter.js": "888483df48293866f9f41d3d9274a779",
 "web_entrypoint.dart": "d41d8cd98f00b204e9800998ecf8427e",
 "ios/Runner.xcworkspace/contents.xcworkspacedata": "7053ea3423578187357b9f92d0c67fc6",
